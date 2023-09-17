@@ -1,0 +1,2 @@
+# Tells the server where to look for the database
+Path-To-Database: database/mail_list.db

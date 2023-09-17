@@ -2,6 +2,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import utils.database_interface as database
+import yaml
+
+# Loads Config
+with open("config.yml", "r") as config:
+    configuration = yaml.safe_load(config)
 
 app = FastAPI()
 
@@ -24,6 +29,15 @@ async def ringer_waitlist(request: Request):
         return {'status': 'OK'}
     else:
         return HTTPException(status_code=500, detail="Internal Server Error")
+    
+@app.get('/get_ringer_waitlist_members/{access_token}')
+def get_ringer_waitlist_members(access_token):
+    if access_token == configuration['Access-Token']:
+        emails = database.fetch_all_ringer_waitlist()
+
+        return emails
+    else:
+        return HTTPException(status_code=403, detail="Invalid Access Token")
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=8005)

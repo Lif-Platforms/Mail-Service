@@ -1,2 +1,5 @@
 # Ignore database folder
 database/
+
+# Ignore all pycach files
+__pycache__/

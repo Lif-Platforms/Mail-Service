@@ -28,7 +28,7 @@ async def ringer_waitlist(request: Request):
     if status == "OK":
         return {'status': 'OK'}
     else:
-        return HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
     
 @app.get('/get_ringer_waitlist_members/{access_token}')
 def get_ringer_waitlist_members(access_token):
@@ -37,7 +37,7 @@ def get_ringer_waitlist_members(access_token):
 
         return emails
     else:
-        return HTTPException(status_code=403, detail="Invalid Access Token")
+        raise HTTPException(status_code=403, detail="Invalid Access Token")
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=8005)

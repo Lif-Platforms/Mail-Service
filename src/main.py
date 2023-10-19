@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import utils.database_interface as database
@@ -7,6 +8,9 @@ import yaml
 # Loads Config
 with open("config.yml", "r") as config:
     configuration = yaml.safe_load(config)
+
+with open("access-tokens.yml", "r") as config:
+    access_tokens = yaml.safe_load(config.read())
 
 app = FastAPI()
 
@@ -47,7 +51,14 @@ async def send_service_email(request: Request):
     # Convert raw bytes of request body to str
     request_body = raw_request_body.decode('UTF-8')
 
-    print(request_body)
+    # Get access token and recipient from request headers
+    client_access_token = request.headers.get('access-token')
+    recipient = request.headers.get('recipient')
+
+    if client_access_token in access_tokens['tokens']:
+        JSONResponse(status_code=200, content="Success!")
+    else:
+        raise HTTPException(status_code=401, detail="Invalid Token!")
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=8005)

@@ -38,6 +38,16 @@ def get_ringer_waitlist_members(access_token):
         return emails
     else:
         raise HTTPException(status_code=403, detail="Invalid Access Token")
+    
+@app.post('/service/send_email')
+async def send_service_email(request: Request):
+    # Get the raw request body in bytes
+    raw_request_body = await request.body()
+
+    # Convert raw bytes of request body to str
+    request_body = raw_request_body.decode('UTF-8')
+
+    print(request_body)
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=8005)

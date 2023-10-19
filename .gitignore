@@ -3,3 +3,9 @@ database/
 
 # Ignore all pycach files
 __pycache__/
+
+# Ignore config files
+access-tokens.yml
+
+# Ignore env files
+.env

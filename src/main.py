@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import utils.database_interface as database
+from utils import email_interface
 import yaml
 
 # Loads Config
@@ -51,12 +52,17 @@ async def send_service_email(request: Request):
     # Convert raw bytes of request body to str
     request_body = raw_request_body.decode('UTF-8')
 
-    # Get access token and recipient from request headers
+    # Get access token, recipient, and subject from request headers
     client_access_token = request.headers.get('access-token')
     recipient = request.headers.get('recipient')
+    subject = request.headers.get('subject')
 
     if client_access_token in access_tokens['tokens']:
-        JSONResponse(status_code=200, content="Success!")
+        # Send email
+        if email_interface.send_email(recipient=recipient, subject=subject, body=request_body) == 'OK':
+            JSONResponse(status_code=200, content="Success!")
+        else:
+            raise HTTPException(status_code=500, detail="Internal Server Error!")
     else:
         raise HTTPException(status_code=401, detail="Invalid Token!")
 

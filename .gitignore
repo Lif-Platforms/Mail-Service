@@ -9,3 +9,6 @@ access-tokens.yml
 
 # Ignore env files
 .env
+
+# Virtual Enviroments
+.venv/

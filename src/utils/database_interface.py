@@ -1,9 +1,12 @@
-import yaml
 import sqlite3
 
-# Loads Config
-with open("config.yml", "r") as config:
-    configuration = yaml.safe_load(config)
+global configuration
+configuration = None
+
+# Allow main script to set config
+def set_config(config):
+    global configuration
+    configuration = config
 
 def add_to_ringer_waitlist(email: str):
     # Connects to database

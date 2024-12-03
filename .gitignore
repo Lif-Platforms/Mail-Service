@@ -6,6 +6,10 @@ __pycache__/
 
 # Ignore config files
 access-tokens.yml
+config.yml
 
 # Ignore env files
 .env
+
+# Virtual Enviroments
+.venv/

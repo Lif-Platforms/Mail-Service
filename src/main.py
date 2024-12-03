@@ -5,15 +5,76 @@ import uvicorn
 import utils.database_interface as database
 from utils import email_interface
 import yaml
+from contextlib import asynccontextmanager
+import os
+import json
 
-# Loads Config
-with open("config.yml", "r") as config:
-    configuration = yaml.safe_load(config)
+# Define config variable for storing configurations
+# This will be written to later by the FastAPI lifespan
+global configuration
+configuration = None
 
 with open("access-tokens.yml", "r") as config:
     access_tokens = yaml.safe_load(config.read())
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Check if config exists
+    # If yes, parse through is and add any necessary items to it
+    # If no, create a new one and add the default config
+    if os.path.isfile('config.yml'):
+        # Read and parse config contents
+        with open('config.yml', 'r') as file:
+            contents = file.read()
+            parsed_config = yaml.safe_load(contents)
+            file.close()
+
+        # Read and parse default config
+        with open(f"{os.path.dirname(os.path.realpath(__file__))}/resources/config_template.json", 'r') as file:
+            contents = file.read()
+            parsed_contents = json.loads(contents)
+            file.close()
+
+        # Ensure all items in default config are present in current config
+        # If not, add missing items to config
+        for option in parsed_contents: 
+            if option not in parsed_config: 
+                parsed_config[option] = parsed_contents[option]
+
+        # Write new config to file system
+        with open('config.yml', 'w') as file:
+            write_data = yaml.safe_dump(parsed_config)
+            file.write(write_data)
+            file.close()
+    else:
+        # Read and parse default config
+        with open(f"{os.path.dirname(os.path.realpath(__file__))}/resources/config_template.json", 'r') as file:
+            contents = file.read()
+            parsed_contents = json.loads(contents)
+            file.close()
+
+        # Create new config file and write default config to it
+        with open('config.yml', 'x') as file:
+            write_data = yaml.safe_dump(parsed_contents)
+            file.write(write_data)
+
+    # Load final config
+    with open('config.yml', 'r') as file:
+        contents = file.read()
+        parsed_contents = yaml.safe_load(contents)
+
+        # Update config variable
+        global configuration
+        configuration = parsed_contents
+
+        file.close()
+
+    # Set config for database interface
+    database.set_config(configuration)
+    
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 # Allow Cross-Origin Resource Sharing (CORS) for all origins
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])

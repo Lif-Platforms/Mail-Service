@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -8,6 +8,10 @@ import yaml
 from contextlib import asynccontextmanager
 import os
 import json
+import requests
+import uuid
+import secrets
+import hashlib
 
 # Define config variable for storing configurations
 # This will be written to later by the FastAPI lifespan
@@ -77,7 +81,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Allow Cross-Origin Resource Sharing (CORS) for all origins
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True
+)
 
 @app.get('/')
 def main_route():
@@ -126,6 +136,162 @@ async def send_service_email(request: Request):
             raise HTTPException(status_code=500, detail="Internal Server Error!")
     else:
         raise HTTPException(status_code=401, detail="Invalid Token!")
+    
+@app.post('/admin/create_credentials')
+async def create_credentials(request: Request, name: str = Form()):
+    # Get auth info
+    username = request.cookies.get("LIF_USERNAME")
+    token = request.cookies.get("LIF_TOKEN")
+
+    # Verify credentials with auth server
+    auth_response = requests.post(
+        f"{configuration['auth-url']}/auth/verify_token?permissions=mailservice.create_credentials",
+        data={
+            "username": username,
+            "token": token
+        },
+        timeout=10
+    )
+
+    if auth_response.status_code == 401:
+        raise HTTPException(status_code=401, detail="Invalid token!")
+    elif auth_response.status_code == 403:
+        raise HTTPException(status_code=403, detail="No permission!")
+    elif auth_response.status_code != 200:
+        raise HTTPException(status_code=500, detail='Internal server error')
+    
+    # Generate client id and secret
+    client_id = str(uuid.uuid4())
+    client_secret = secrets.token_hex(16)
+    client_secret_salt = secrets.token_hex(16)
+    client_secret_hash_object = hashlib.sha256(f"{client_secret}{client_secret_salt}".encode())
+    client_secret_hash_hex = client_secret_hash_object.hexdigest()
+
+    # Add credentials to database
+    await database.credentials.create_credentials(
+        name=name,
+        client_id=client_id,
+        client_secret_hash=client_secret_hash_hex,
+        secret_salt=client_secret_salt
+    )
+
+    return {"name": name, "client_id": client_id, "client_secret": client_secret}
+
+@app.api_route('/admin/modify_permissions/{client_id}', methods=["POST", "DELETE"])
+async def modify_permissions(request: Request, client_id: str):
+    # Get auth info
+    username = request.cookies.get("LIF_USERNAME")
+    token = request.cookies.get("LIF_TOKEN")
+
+    # Verify credentials with auth server
+    auth_response = requests.post(
+        f"{configuration['auth-url']}/auth/verify_token?permissions=mailservice.modify_permissions",
+        data={
+            "username": username,
+            "token": token
+        },
+        timeout=10
+    )
+
+    if auth_response.status_code == 401:
+        raise HTTPException(status_code=401, detail="Invalid token!")
+    elif auth_response.status_code == 403:
+        raise HTTPException(status_code=403, detail="No permission!")
+    elif auth_response.status_code != 200:
+        raise HTTPException(status_code=500, detail='Internal server error')
+    
+    # Check if credentials exist
+    if not await database.credentials.get_credentials(client_id=client_id):
+        raise HTTPException(status_code=404, detail="Credentials not found")
+    
+    # Get Request Body
+    request_body = await request.json()
+    
+    # Check request method
+    if request.method == "DELETE":
+        await database.permissions.remove_permissions(
+            client_id=client_id,
+            permissions=request_body
+        )
+
+        return "ok"
+    else:
+        await database.permissions.add_permissions(
+            client_id=client_id,
+            permissions=request_body
+        )
+
+        return "ok"
+    
+@app.get("/admin/get_permissions/{client_id}")
+async def get_permissions(request: Request, client_id: str):
+    # Get auth info
+    username = request.cookies.get("LIF_USERNAME")
+    token = request.cookies.get("LIF_TOKEN")
+
+    # Verify credentials with auth server
+    auth_response = requests.post(
+        f"{configuration['auth-url']}/auth/verify_token?permissions=mailservice.view_permissions",
+        data={
+            "username": username,
+            "token": token
+        },
+        timeout=10
+    )
+
+    if auth_response.status_code == 401:
+        raise HTTPException(status_code=401, detail="Invalid token!")
+    elif auth_response.status_code == 403:
+        raise HTTPException(status_code=403, detail="No permission!")
+    elif auth_response.status_code != 200:
+        raise HTTPException(status_code=500, detail='Internal server error')
+    
+    # Get credentials and ensure they exist
+    credentials = await database.credentials.get_credentials(client_id=client_id)
+
+    if not credentials:
+        raise HTTPException(status_code=404, detail="Credentials not found")
+    
+    # Get permissions
+    permissions = await database.permissions.get_permissions(client_id=client_id)
+
+    return {
+        "name": credentials['name'],
+        "client_id": credentials['client_id'],
+        "permissions": permissions
+    }
+
+@app.delete('/admin/remove_credentials/{client_id}')
+async def remove_credentials(request: Request, client_id: str):
+    # Get auth info
+    username = request.cookies.get("LIF_USERNAME")
+    token = request.cookies.get("LIF_TOKEN")
+
+    # Verify credentials with auth server
+    auth_response = requests.post(
+        f"{configuration['auth-url']}/auth/verify_token?permissions=mailservice.remove_credentials",
+        data={
+            "username": username,
+            "token": token
+        },
+        timeout=10
+    )
+
+    if auth_response.status_code == 401:
+        raise HTTPException(status_code=401, detail="Invalid token!")
+    elif auth_response.status_code == 403:
+        raise HTTPException(status_code=403, detail="No permission!")
+    elif auth_response.status_code != 200:
+        raise HTTPException(status_code=500, detail='Internal server error')
+    
+    # Check if credentials exist
+    if not await database.credentials.get_credentials(client_id=client_id):
+        raise HTTPException(status_code=404, detail="Credentials not found")
+    
+    # Delete credentials and all associated permission nodes from database
+    await database.credentials.remove_credentials(client_id=client_id)
+
+    return "ok"
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=8005)

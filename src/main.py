@@ -145,11 +145,12 @@ async def create_credentials(request: Request, name: str = Form()):
 
     # Verify credentials with auth server
     auth_response = requests.post(
-        f'{configuration['auth-url']}/auth/verify_token?permissions=mailservice.create_credentials',
+        f"{configuration['auth-url']}/auth/verify_token?permissions=mailservice.create_credentials",
         data={
             "username": username,
             "token": token
-        }
+        },
+        timeout=10
     )
 
     if auth_response.status_code == 401:
@@ -184,11 +185,12 @@ async def modify_permissions(request: Request, client_id: str):
 
     # Verify credentials with auth server
     auth_response = requests.post(
-        f'{configuration['auth-url']}/auth/verify_token?permissions=mailservice.modify_permissions',
+        f"{configuration['auth-url']}/auth/verify_token?permissions=mailservice.modify_permissions",
         data={
             "username": username,
             "token": token
-        }
+        },
+        timeout=10
     )
 
     if auth_response.status_code == 401:
@@ -229,11 +231,12 @@ async def get_permissions(request: Request, client_id: str):
 
     # Verify credentials with auth server
     auth_response = requests.post(
-        f'{configuration['auth-url']}/auth/verify_token?permissions=mailservice.view_permissions',
+        f"{configuration['auth-url']}/auth/verify_token?permissions=mailservice.view_permissions",
         data={
             "username": username,
             "token": token
-        }
+        },
+        timeout=10
     )
 
     if auth_response.status_code == 401:
@@ -266,11 +269,12 @@ async def remove_credentials(request: Request, client_id: str):
 
     # Verify credentials with auth server
     auth_response = requests.post(
-        f'{configuration['auth-url']}/auth/verify_token?permissions=mailservice.remove_credentials',
+        f"{configuration['auth-url']}/auth/verify_token?permissions=mailservice.remove_credentials",
         data={
             "username": username,
             "token": token
-        }
+        },
+        timeout=10
     )
 
     if auth_response.status_code == 401:

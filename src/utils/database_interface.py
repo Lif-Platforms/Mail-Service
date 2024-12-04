@@ -27,7 +27,7 @@ async def connect_to_database():
         mysql_configs['ssl_ca'] = configuration['mysql-cert-path']
 
     conn = mysql.connector.connect(**mysql_configs)
-    
+
     return conn
 
 def add_to_ringer_waitlist(email: str):

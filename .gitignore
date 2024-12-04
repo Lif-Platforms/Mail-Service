@@ -13,3 +13,6 @@ config.yml
 
 # Virtual Enviroments
 .venv/
+
+# Cert files
+*.pem

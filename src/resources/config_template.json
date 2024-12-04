@@ -1,4 +1,12 @@
 {
     "Path-To-Database": "INSERT PATH HERE",
-    "Access-Token": "INSERT ACCESS TOKEN HERE"
+    "Access-Token": "INSERT ACCESS TOKEN HERE",
+    "mysql-host": "INSERT HOST HERE",
+    "mysql-port": "INSERT PORT HERE",
+    "mysql-user": "INSERT USER HERE",
+    "mysql-password": "INSERT PASSWORD HERE",
+    "mysql-database": "INSERT DATABASE HERE",
+    "mysql-ssl": false,
+    "mysql-cert-path": null,
+    "auth-url": "INSERT AUTH URL HERE"
 }

@@ -3,3 +3,5 @@ uvicorn==0.22.0
 PyYAML==6.0
 nylas==5.14.1
 python-dotenv==1.0.0
+mysql-connector-python==9.1.0
+python-multipart==0.0.19

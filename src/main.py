@@ -261,6 +261,31 @@ async def get_permissions(request: Request, client_id: str):
         "permissions": permissions
     }
 
+@app.get('/admin/get_credentials')
+async def get_credentials(request: Request):
+    # Get auth info
+    username = request.cookies.get("LIF_USERNAME")
+    token = request.cookies.get("LIF_TOKEN")
+
+    # Verify credentials with auth server
+    auth_response = requests.post(
+        f"{configuration['auth-url']}/auth/verify_token?permissions=mailservice.view_credentials",
+        data={
+            "username": username,
+            "token": token
+        },
+        timeout=10
+    )
+
+    if auth_response.status_code == 401:
+        raise HTTPException(status_code=401, detail="Invalid token!")
+    elif auth_response.status_code == 403:
+        raise HTTPException(status_code=403, detail="No permission!")
+    elif auth_response.status_code != 200:
+        raise HTTPException(status_code=500, detail='Internal server error')
+    
+    return await database.credentials.list_credentials()
+
 @app.delete('/admin/remove_credentials/{client_id}')
 async def remove_credentials(request: Request, client_id: str):
     # Get auth info

@@ -102,6 +102,22 @@ class credentials:
             }
         else:
             return None
+        
+    async def list_credentials():
+        conn = await connect_to_database()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT name, client_id FROM credentials")
+        credentials = cursor.fetchall()
+        conn.close()
+
+        credentials_list = []
+
+        for credential in credentials:
+            credentials_list.append({"name": credential[0], "client_id": credential[1]})
+
+        return credentials_list
+
 
 class permissions:
     async def add_permissions(permissions: list, client_id: str):

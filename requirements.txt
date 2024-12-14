@@ -1,4 +1,4 @@
-fastapi==0.103.1
+fastapi==0.109.1
 uvicorn==0.22.0
 PyYAML==6.0
 nylas==5.14.1
